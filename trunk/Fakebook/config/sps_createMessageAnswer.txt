@@ -1,0 +1,36 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_createMessageAnswer` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createMessageAnswer`(
+  IN_idBenutzer INT,
+  IN_idBenutzerTo INT,
+  IN_Nachricht TEXT,
+  IN_Datum DATETIME,
+  IN_idParent INT
+)
+BEGIN
+
+DECLARE DEC_idBenutzerFrom INT;
+DECLARE DEC_idBenutzerTo INT;
+
+SELECT
+  idBenutzerFrom, idBenutzerTo
+INTO
+  DEC_idBenutzerFrom, DEC_idBenutzerTo
+FROM
+  nachricht
+WHERE
+  idNachricht=IN_idParent;
+
+IF (IN_idBenutzer != IN_idBenutzerTo)
+  AND (DEC_idBenutzerFrom=IN_idBenutzer OR DEC_idBenutzerTo=IN_idBenutzer)
+  AND (DEC_idBenutzerFrom=IN_idBenutzerTo OR DEC_idBenutzerTo=IN_idBenutzerTo) THEN
+  INSERT INTO nachricht
+    (idBenutzerFrom, idBenutzerTo, Nachricht, Datum, idParent)
+    VALUES(IN_idBenutzer, IN_idBenutzerTo, IN_Nachricht, IN_Datum, IN_idParent);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;

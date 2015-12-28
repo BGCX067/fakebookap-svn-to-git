@@ -1,0 +1,26 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_deleteMessages` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteMessages`(
+  IN IN_idBenutzer INT,
+  IN IN_idNachricht INT
+)
+BEGIN
+
+DELETE
+FROM
+  nachricht
+WHERE
+  idParent=IN_idNachricht AND
+  (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+
+DELETE
+FROM
+  nachricht
+WHERE
+  idNachricht=IN_idNachricht AND
+  (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+
+END $$
+
+DELIMITER ;

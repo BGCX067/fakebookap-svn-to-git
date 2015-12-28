@@ -1,0 +1,19 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_createGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createGroup`(IN_name CHAR(60), IN_beschreibung TEXT, IN_gruppentyp INT, IN_admin INT)
+BEGIN
+
+DECLARE rechtID INT;
+DECLARE gruppenID INT;
+
+INSERT INTO gruppe (name, beschreibung, idGruppentyp) VALUES (IN_name, IN_beschreibung, IN_gruppentyp);
+
+SELECT idGruppenrecht INTO rechtID FROM gruppenrecht WHERE Recht = 'Gründer';
+SELECT LAST_INSERT_ID() INTO gruppenID;
+
+INSERT INTO gruppenmitglied (idGruppe, idBenutzer, idGruppenrecht) VALUES (gruppenID, IN_admin, rechtID);
+
+END $$
+
+DELIMITER ;

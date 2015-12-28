@@ -1,0 +1,11 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_editGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_editGroup`(IN_idGruppe INT, IN_name CHAR(60), IN_beschreibung TEXT, IN_gruppentyp INT)
+BEGIN
+
+UPDATE gruppe SET Name=IN_name, Beschreibung=IN_beschreibung, idGruppentyp=IN_gruppentyp WHERE idGruppe=IN_idGruppe;
+
+END $$
+
+DELIMITER ;

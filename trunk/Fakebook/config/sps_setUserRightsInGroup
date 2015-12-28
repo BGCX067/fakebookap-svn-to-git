@@ -1,0 +1,25 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_setUserRightsInGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_setUserRightsInGroup`(IN_idGruppe INT, IN_idBenutzer INT, IN_idGruppenrecht INT)
+BEGIN
+
+DECLARE anzahl INT;
+
+SELECT
+  COUNT(idBenutzer) INTO anzahl
+FROM
+  gruppenmitglied
+WHERE
+  idGruppe=IN_idGruppe AND
+  idBenutzer=IN_idBenutzer;
+
+IF anzahl > 0 THEN
+  UPDATE gruppenmitglied SET idGruppenrecht=IN_idGruppenrecht WHERE idGruppe=IN_idGruppe AND idBenutzer=IN_idBenutzer;
+ELSE
+  INSERT INTO gruppenmitglied (idGruppe, idBenutzer, idGruppenrecht) VALUES (IN_idGruppe, IN_idBenutzer, IN_idGruppenrecht);
+END IF;
+
+END $$
+
+DELIMITER ;

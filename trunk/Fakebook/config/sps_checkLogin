@@ -1,0 +1,19 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_checkLogin` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_checkLogin`(IN_email CHAR(100), IN_passwort CHAR(30))
+BEGIN
+
+DECLARE v_idBenutzer INT;
+
+SELECT
+  idBenutzer, vorname, nachname
+FROM
+  Benutzer
+WHERE
+  email=IN_email AND
+  passwort=IN_passwort;
+
+END $$
+
+DELIMITER ;

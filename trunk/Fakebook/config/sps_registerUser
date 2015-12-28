@@ -1,0 +1,25 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_registerUser` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_registerUser`(IN_vorname CHAR(40), IN_nachname CHAR(40), IN_email CHAR(100), IN_passwort CHAR(30))
+BEGIN
+
+DECLARE anzahl INT;
+
+SELECT
+  COUNT(idBenutzer) INTO anzahl
+FROM
+  benutzer
+WHERE
+  email=IN_email;
+
+IF anzahl > 0 THEN
+  SELECT FALSE;
+ELSE
+  INSERT INTO benutzer (vorname, nachname, email, passwort) VALUES (IN_vorname, IN_nachname, IN_email, IN_passwort);
+  SELECT TRUE;
+END IF;
+
+END $$
+
+DELIMITER ;

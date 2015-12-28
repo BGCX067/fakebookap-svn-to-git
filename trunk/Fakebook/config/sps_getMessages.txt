@@ -1,0 +1,69 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_getMessages` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getMessages`(
+  IN IN_BenutzerId INT
+)
+BEGIN
+
+(
+  SELECT * FROM
+  (
+    SELECT
+      n.idNachricht,
+      n.idBenutzerFrom,
+      n.idBenutzerTo,
+      f.Vorname AS VornameFrom,
+      t.Vorname AS VornameTo,
+      f.Nachname AS NachnameFrom,
+      t.Nachname AS NachnameTo,
+  	  n.Nachricht,
+  	  n2.Betreff,
+  	  n.Datum,
+      n.idParent
+    FROM
+  	  nachricht n
+    LEFT OUTER JOIN
+      Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+    LEFT OUTER JOIN
+      Benutzer t ON t.idBenutzer=n.idBenutzerTo
+    LEFT OUTER JOIN
+      Nachricht n2 ON n2.idNachricht=n.idParent
+    WHERE
+      n.idBenutzerFrom=IN_BenutzerId OR n.idBenutzerTO=IN_BenutzerId
+    ORDER BY
+      n.Datum DESC
+  ) AS tableTmp
+  WHERE
+    idParent IS NOT NULL
+  GROUP BY
+    idParent
+)
+UNION ALL
+(
+  SELECT
+    n.idNachricht,
+    n.idBenutzerFrom,
+    n.idBenutzerTo,
+    f.Vorname VornameFrom,
+    t.Vorname VornameTo,
+    f.Nachname NachnameFrom,
+    t.Nachname NachnameTo,
+	  n.Nachricht,
+	  n.Betreff,
+	  n.Datum,
+    n.idParent
+  FROM
+	  nachricht n
+  LEFT OUTER JOIN
+    Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+  LEFT OUTER JOIN
+    Benutzer t ON t.idBenutzer=n.idBenutzerTo
+  WHERE
+    (n.idParent IS NULL) AND
+    (n.idBenutzerFrom=IN_BenutzerId OR n.idBenutzerTO=IN_BenutzerId)
+) ORDER BY Datum DESC;
+
+END $$
+
+DELIMITER ;

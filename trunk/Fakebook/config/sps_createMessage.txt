@@ -1,0 +1,22 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_createMessage` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createMessage`(
+  IN_idBenutzer INT,
+  IN_idBenutzerTo INT,
+  IN_Nachricht TEXT,
+  IN_Betreff VARCHAR(100),
+  IN_Datum DATETIME
+)
+BEGIN
+
+IF IN_idBenutzer != IN_idBenutzerTo THEN
+  INSERT INTO nachricht
+    (idBenutzerFrom, idBenutzerTo, Nachricht, Betreff, Datum)
+    VALUES(IN_idBenutzer, IN_idBenutzerTo, IN_Nachricht, IN_Betreff, IN_Datum);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;

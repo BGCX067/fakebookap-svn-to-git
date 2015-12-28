@@ -1,0 +1,11 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_deleteUserFromGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteUserFromGroup`(IN_idGruppe INT, IN_idBenutzer INT)
+BEGIN
+
+DELETE FROM gruppenmitglied WHERE idGruppe=IN_idGruppe AND idBenutzer=IN_idBenutzer;
+
+END $$
+
+DELIMITER ;

@@ -1,0 +1,996 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_acceptFriend` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_acceptFriend`(
+  IN IN_idBenutzer INT,
+  IN IN_idFriend INT
+)
+BEGIN
+
+UPDATE
+  freundschaft
+SET
+  Status=1
+WHERE
+  idBenutzerFrom=IN_idFriend AND idBenutzerTo=IN_idBenutzer;
+
+SELECT
+  idBenutzerFrom,
+  idBenutzerTo,
+  `status`
+FROM
+  freundschaft
+WHERE
+  (idBenutzerFrom=IN_idBenutzer AND idBenutzerTo=IN_idFriend) OR
+  (idBenutzerFrom=IN_idFriend AND idBenutzerTo=IN_idBenutzer);
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_addFriend` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_addFriend`(
+  IN IN_idBenutzer INT,
+  IN IN_idFriend INT
+)
+BEGIN
+
+DECLARE DEC_exists TINYINT(1) DEFAULT 0;
+
+SELECT
+  1
+INTO
+  DEC_exists
+FROM
+  freundschaft
+WHERE
+  (idBenutzerFrom=IN_idBenutzer AND idBenutzerTo=IN_idFriend) OR
+  (idBenutzerFrom=IN_idFriend AND idBenutzerTo=IN_idBenutzer);
+
+IF DEC_exists != 1 THEN
+  IF IN_idBenutzer != IN_idFriend THEN
+    INSERT INTO freundschaft (idBenutzerFrom, idBenutzerTo) VALUES (IN_idBenutzer, IN_idFriend);
+    SELECT
+      idBenutzerFrom,
+      idBenutzerTo,
+      `status`
+    FROM
+      freundschaft
+    WHERE
+      (idBenutzerFrom=IN_idBenutzer AND idBenutzerTo=IN_idFriend) OR
+      (idBenutzerFrom=IN_idFriend AND idBenutzerTo=IN_idBenutzer);
+
+  END IF;
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_addKommentar` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_addKommentar`(
+  IN IN_idBenutzer INT,
+  IN IN_kommentar TEXT,
+  IN IN_datum DATETIME,
+  IN IN_idMeldung INT
+)
+BEGIN
+
+INSERT INTO kommentar
+  (idBenutzer, Kommentar, Datum, idMeldung)
+  VALUES (IN_idBenutzer, IN_kommentar, IN_datum, IN_idMeldung);
+
+END $$
+
+DELIMITER ;
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getFriendship` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getFriendship`(
+  IN IN_idProfil INT,
+  IN IN_idUser INT
+)
+BEGIN
+
+SELECT
+  idBenutzerFrom,
+  idBenutzerTo,
+  `status`
+FROM
+  freundschaft
+WHERE
+  (idBenutzerFrom=IN_idProfil AND idBenutzerTo=IN_idUser) OR
+  (idBenutzerFrom=IN_idUser AND idBenutzerTo=IN_idProfil);
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getGroupMembers` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getGroupMembers`(
+  IN IN_idGruppe INT
+)
+BEGIN
+
+SELECT
+  b.idBenutzer,
+  b.vorname,
+  b.nachname
+FROM
+  gruppenmitglied gm,
+  benutzer b,
+  gruppenrecht gr
+WHERE
+  gm.idGruppe=IN_idGruppe AND
+  b.idBenutzer=gm.idBenutzer AND
+  gr.idGruppenrecht=gm.idGruppenrecht AND
+  gr.Recht!='Eingeladen';
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_getGruppentyp` $$
+CREATE PROCEDURE `fakebook`.`sps_getGruppentyp` ()
+BEGIN
+
+SELECT
+  idGruppentyp,
+  typ
+FROM
+  gruppentyp;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getKommentare` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getKommentare`(
+  IN IN_idMeldung INT
+)
+BEGIN
+
+SELECT
+  k.Kommentar,
+  k.Datum,
+  b.Vorname AS Vorname,
+  b.Nachname AS Nachname,
+  k.idBenutzer
+FROM
+  kommentar k
+LEFT OUTER JOIN
+  Benutzer b ON b.idBenutzer=k.idBenutzer
+WHERE
+  k.idMeldung=IN_idMeldung
+ORDER BY
+  k.Datum DESC;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getUserGroups` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getUserGroups`(
+  IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT
+  g.idGruppe,
+  g.name
+FROM
+  gruppe g,
+  gruppenmitglied m
+WHERE
+  m.idBenutzer=IN_idBenutzer AND
+  m.idGruppe=g.idGruppe;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getUserInformations` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getUserInformations`(
+  IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT
+  i.wert,
+  n.bezeichnung
+FROM
+  benutzerinformation i,
+  informationsname n
+WHERE
+  i.idBenutzer=IN_idBenutzer AND
+  i.idInformationsname=n.idInformationsname
+ORDER BY
+  n.bezeichnung ASC;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_createMessage` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createMessage`(
+  IN_idBenutzer INT,
+  IN_idBenutzerTo INT,
+  IN_Nachricht TEXT,
+  IN_Betreff VARCHAR(100),
+  IN_Datum DATETIME
+)
+BEGIN
+
+IF IN_idBenutzer != IN_idBenutzerTo THEN
+  INSERT INTO nachricht
+    (idBenutzerFrom, idBenutzerTo, Nachricht, Betreff, Datum)
+    VALUES(IN_idBenutzer, IN_idBenutzerTo, IN_Nachricht, IN_Betreff, IN_Datum);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_createMessageAnswer` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createMessageAnswer`(
+  IN_idBenutzer INT,
+  IN_idBenutzerTo INT,
+  IN_Nachricht TEXT,
+  IN_Datum DATETIME,
+  IN_idParent INT
+)
+BEGIN
+
+DECLARE DEC_idBenutzerFrom INT;
+DECLARE DEC_idBenutzerTo INT;
+
+SELECT
+  idBenutzerFrom, idBenutzerTo
+INTO
+  DEC_idBenutzerFrom, DEC_idBenutzerTo
+FROM
+  nachricht
+WHERE
+  idNachricht=IN_idParent;
+
+IF (IN_idBenutzer != IN_idBenutzerTo)
+  AND (DEC_idBenutzerFrom=IN_idBenutzer OR DEC_idBenutzerTo=IN_idBenutzer)
+  AND (DEC_idBenutzerFrom=IN_idBenutzerTo OR DEC_idBenutzerTo=IN_idBenutzerTo) THEN
+  INSERT INTO nachricht
+    (idBenutzerFrom, idBenutzerTo, Nachricht, Datum, idParent)
+    VALUES(IN_idBenutzer, IN_idBenutzerTo, IN_Nachricht, IN_Datum, IN_idParent);
+  UPDATE
+    nachricht
+  SET
+    HiddenFrom=0,
+    HiddenTo=0,
+    Gelesen=0
+  WHERE
+    idNachricht=IN_idParent AND
+    (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_deleteFriend` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteFriend`(
+  IN IN_idBenutzer INT,
+  IN IN_idFriend INT
+)
+BEGIN
+
+DELETE FROM
+  freundschaft
+WHERE
+  (idBenutzerFrom=IN_idFriend AND idBenutzerTo=IN_idBenutzer) OR
+  (idBenutzerFrom=IN_idBenutzer AND idBenutzerTo=IN_idFriend);
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_deleteMessages` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteMessages`(
+  IN IN_idBenutzer INT,
+  IN IN_idNachricht INT
+)
+BEGIN
+
+DECLARE DEC_idBenutzerFrom INT;
+DECLARE DEC_idBenutzerTo INT;
+
+SELECT
+  idBenutzerFrom,
+  idBenutzerTo
+INTO
+  DEC_idBenutzerFrom,
+  DEC_idBenutzerTo
+FROM
+  nachricht
+WHERE
+  idNachricht=IN_idNachricht AND
+  (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+
+IF DEC_idBenutzerFrom = IN_idBenutzer THEN
+  UPDATE
+    nachricht
+  SET
+    HiddenFrom=1
+  WHERE
+    idNachricht=IN_idNachricht AND
+    (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+  SELECT 'done';
+ELSEIF DEC_idBenutzerTo = IN_idBenutzer THEN
+  UPDATE
+    nachricht
+  SET
+    HiddenTo=1
+  WHERE
+    idNachricht=IN_idNachricht AND
+    (idBenutzerFrom=IN_idBenutzer OR idBenutzerTo=IN_idBenutzer);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getFriends` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getFriends`(
+  IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT
+  IF(bzf.idBenutzer=IN_idBenutzer, bzt.idBenutzer, bzf.idBenutzer) AS idFriend,
+  IF(bzf.idBenutzer=IN_idBenutzer, bzt.Vorname, bzf.Vorname) AS Vorname,
+  IF(bzf.idBenutzer=IN_idBenutzer, bzt.Nachname, bzf.Nachname) AS Nachname
+FROM
+  freundschaft fs
+LEFT OUTER JOIN
+  Benutzer bzf ON bzf.idBenutzer=fs.idBenutzerFrom
+LEFT OUTER JOIN
+  Benutzer bzt ON bzt.idBenutzer=fs.idBenutzerTo
+WHERE
+  fs.idBenutzerFrom=IN_idBenutzer OR fs.idBenutzerTo=IN_idBenutzer
+ORDER BY
+  IF(bzf.idBenutzer=IN_idBenutzer, bzt.Nachname, bzf.Nachname) ASC;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getFriendsMeldungen` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getFriendsMeldungen`(
+  IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT
+  m.idMeldung,
+  m.Meldung,
+  m.Datum,
+  b.Nachname AS Nachname,
+  b.Vorname AS Vorname,
+  m.idBenutzer
+FROM
+  meldung m
+LEFT OUTER JOIN
+  Benutzer b ON b.idBenutzer=m.idBenutzer
+LEFT OUTER JOIN
+  Freundschaft f ON
+    (f.idBenutzerFrom=IN_idBenutzer AND f.idBenutzerTo=m.idBenutzer) OR
+    (f.idBenutzerTo=IN_idBenutzer AND f.idBenutzerFrom=m.idBenutzer)
+WHERE
+  f.idFreundschaft IS NOT NULL
+ORDER BY
+  m.Datum DESC;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getGroupInformations` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getGroupInformations`(
+  IN IN_idGruppe INT
+)
+BEGIN
+
+SELECT
+  g.name,
+  g.beschreibung,
+  t.typ
+FROM
+  gruppe g,
+  gruppentyp t
+WHERE
+  idGruppe=IN_idGruppe AND
+  t.idGruppentyp=g.idGruppentyp;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getMessages` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getMessages`(
+  IN IN_BenutzerId INT
+)
+BEGIN
+
+(
+  SELECT * FROM
+  (
+    SELECT
+      n.idNachricht,
+      n.idBenutzerFrom,
+      n.idBenutzerTo,
+      f.Vorname AS VornameFrom,
+      t.Vorname AS VornameTo,
+      f.Nachname AS NachnameFrom,
+      t.Nachname AS NachnameTo,
+  	  n.Nachricht,
+  	  n2.Betreff,
+  	  n.Datum,
+      n.idParent,
+      IF(n.idBenutzerFrom=IN_BenutzerId, 1, 0) AS Geantwortet,
+      IF(n.idBenutzerTo=IN_BenutzerId, n2.Gelesen, 1) AS Gelesen
+    FROM
+  	  nachricht n
+    LEFT OUTER JOIN
+      Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+    LEFT OUTER JOIN
+      Benutzer t ON t.idBenutzer=n.idBenutzerTo
+    LEFT OUTER JOIN
+      Nachricht n2 ON n2.idNachricht=n.idParent
+    WHERE
+      (n2.idBenutzerFrom=IN_BenutzerId AND n2.HiddenFrom!=1) OR (n2.idBenutzerTO=IN_BenutzerId AND n2.HiddenTo!=1)
+    ORDER BY
+      n.Datum DESC
+  ) AS tableTmp
+  WHERE
+    idParent IS NOT NULL
+  GROUP BY
+    idParent
+)
+UNION ALL
+(
+  SELECT
+    n.idNachricht,
+    n.idBenutzerFrom,
+    n.idBenutzerTo,
+    f.Vorname VornameFrom,
+    t.Vorname VornameTo,
+    f.Nachname NachnameFrom,
+    t.Nachname NachnameTo,
+	  n.Nachricht,
+	  n.Betreff,
+	  n.Datum,
+    n.idParent,
+    0 AS Geantwortet,
+    IF(n.idBenutzerTo=IN_BenutzerId, n.Gelesen, 1) AS Gelesen
+  FROM
+	  nachricht n
+  LEFT OUTER JOIN
+    Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+  LEFT OUTER JOIN
+    Benutzer t ON t.idBenutzer=n.idBenutzerTo
+  WHERE
+    (n.idParent IS NULL) AND
+    ((n.idBenutzerFrom=IN_BenutzerId AND n.HiddenFrom!=1) OR (n.idBenutzerTO=IN_BenutzerId AND n.HiddenTo!=1))
+) ORDER BY Datum DESC;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getMessagesOfParent` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getMessagesOfParent`(
+  IN IN_BenutzerId INT,
+  IN IN_ParentId INT
+)
+BEGIN
+
+DECLARE DEC_id INT;
+DECLARE DEC_idBenutzerToCheck INT;
+DECLARE DEC_isHidden TINYINT(1);
+DECLARE DEC_idActual INT;
+
+SELECT IF(idBenutzerTo=IN_BenutzerId, HiddenTo, HiddenFrom) INTO DEC_isHidden FROM nachricht WHERE idNachricht=IN_ParentId;
+SELECT idNachricht INTO DEC_idActual FROM nachricht WHERE idParent=IN_ParentId ORDER BY Datum DESC LIMIT 1;
+
+IF DEC_idActual IS NULL THEN
+  SELECT idNachricht INTO DEC_idActual FROM nachricht WHERE idNachricht=IN_ParentId;
+END IF;
+
+IF DEC_isHidden != TRUE THEN
+  /* Setzt das Gelesen-Flag auf true */
+  SELECT idBenutzerTo INTO DEC_idBenutzerToCheck FROM nachricht WHERE idNachricht=DEC_idActual;
+
+  IF DEC_idBenutzerToCheck=IN_BenutzerId THEN
+    UPDATE
+      nachricht
+    SET
+      Gelesen=1
+    WHERE
+      idNachricht=IN_ParentId AND
+      (idBenutzerTo=IN_BenutzerId OR idBenutzerFrom=IN_BenutzerId);
+  END IF;
+
+  /* Holen der Nachrichten */
+  SELECT
+    IF(idParent IS NOT NULL,idParent,idNachricht) INTO DEC_id
+  FROM
+    nachricht
+  WHERE
+    (idBenutzerFrom=IN_BenutzerId OR idBenutzerTo=IN_BenutzerId) AND
+    (idNachricht=IN_ParentId OR idParent=IN_ParentId)
+  ORDER BY
+    Datum ASC
+  LIMIT 1;
+
+  SELECT
+    n.idNachricht,
+    n.idBenutzerFrom AS idBenutzer,
+    f.Vorname AS Vorname,
+    f.Nachname AS Nachname,
+    n.Nachricht,
+    IF(n.Betreff IS NULL, n2.Betreff, n.Betreff) AS Betreff,
+    n.Datum
+  FROM
+    nachricht n
+  LEFT OUTER JOIN
+    Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+  LEFT OUTER JOIN
+    Nachricht n2 ON n2.idNachricht=n.idParent
+  WHERE
+    (n.idBenutzerFrom=IN_BenutzerId OR n.idBenutzerTO=IN_BenutzerId) AND
+    (n.idNachricht=DEC_id OR n.idParent=DEC_id)
+  ORDER BY
+    n.Datum DESC;
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_getUserMeldungen` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getUserMeldungen`(
+  IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT
+  Meldung,
+  Datum
+FROM
+  meldung
+WHERE
+  idBenutzer=IN_idBenutzer;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_hideMessages` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_hideMessages`(
+  IN IN_BenutzerId INT,
+  IN IN_ParentId INT
+)
+BEGIN
+
+UPDATE
+  nachricht
+SET
+  HiddenFrom=1
+WHERE
+  idBenutzerFrom=IN_BenutzerId AND idNachricht=IN_ParentId;
+
+UPDATE
+  nachricht
+SET
+  HiddenTo=1
+WHERE
+  idBenutzerTo=IN_BenutzerId AND idNachricht=IN_ParentId;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_isUserInGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_isUserInGroup`(
+  IN IN_idBenutzer INT,
+  IN IN_idGruppe INT
+)
+BEGIN
+
+SELECT
+  idGruppenmitglied
+FROM
+  gruppenmitglied
+WHERE
+  idGruppe=IN_idGruppe AND
+  idBenutzer=IN_idBenutzer;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_checkLogin` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_checkLogin`(
+  IN IN_email CHAR(100),
+  IN IN_passwort CHAR(30)
+)
+BEGIN
+
+DECLARE v_idBenutzer INT;
+
+SELECT
+  idBenutzer,
+  vorname,
+  nachname
+FROM
+  Benutzer
+WHERE
+  email=IN_email AND
+  passwort=IN_passwort;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_createGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createGroup`(IN_name CHAR(60), IN_beschreibung TEXT, IN_gruppentyp INT, IN_admin INT)
+BEGIN
+
+DECLARE rechtID INT;
+DECLARE gruppenID INT;
+
+INSERT INTO gruppe (name, beschreibung, idGruppentyp) VALUES (IN_name, IN_beschreibung, IN_gruppentyp);
+
+SELECT idGruppenrecht INTO rechtID FROM gruppenrecht WHERE Recht = 'Gründer';
+SELECT LAST_INSERT_ID() INTO gruppenID;
+
+INSERT INTO gruppenmitglied (idGruppe, idBenutzer, idGruppenrecht) VALUES (gruppenID, IN_admin, rechtID);
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_deleteGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteGroup`(IN_idGruppe INT)
+BEGIN
+
+DELETE FROM gruppenmitglied WHERE idGruppe=IN_idGruppe;
+DELETE FROM gruppe WHERE idGruppe=IN_idGruppe;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_deleteUserFromGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_deleteUserFromGroup`(IN_idGruppe INT, IN_idBenutzer INT)
+BEGIN
+
+DELETE FROM gruppenmitglied WHERE idGruppe=IN_idGruppe AND idBenutzer=IN_idBenutzer;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_editGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_editGroup`(
+  IN IN_idGruppe INT,
+  IN IN_name CHAR(60),
+  IN IN_beschreibung TEXT,
+  IN IN_gruppentyp INT
+)
+BEGIN
+
+UPDATE
+  gruppe
+SET
+  Name=IN_name,
+  Beschreibung=IN_beschreibung,
+  idGruppentyp=IN_gruppentyp
+WHERE
+  idGruppe=IN_idGruppe;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_registerUser` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_registerUser`(
+  IN IN_vorname CHAR(40),
+  IN IN_nachname CHAR(40),
+  IN IN_email CHAR(100),
+  IN IN_passwort CHAR(30)
+)
+BEGIN
+
+DECLARE anzahl INT;
+
+SELECT
+  COUNT(idBenutzer) INTO anzahl
+FROM
+  benutzer
+WHERE
+  email=IN_email;
+
+IF anzahl <= 0 THEN
+  INSERT INTO benutzer (vorname, nachname, email, passwort) VALUES (IN_vorname, IN_nachname, IN_email, IN_passwort);
+  SELECT 'done';
+END IF;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_setUserRightsInGroup` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_setUserRightsInGroup`(
+  IN IN_idGruppe INT,
+  IN IN_idBenutzer INT,
+  IN IN_idGruppenrecht INT
+)
+BEGIN
+
+DECLARE anzahl INT;
+DECLARE rechtid INT;
+
+SELECT
+  SQL_CALC_FOUND_ROWS idBenutzer
+FROM
+  gruppenmitglied
+WHERE
+  idGruppe=IN_idGruppe AND
+  idBenutzer=IN_idBenutzer;
+
+SELECT FOUND_ROWS() INTO anzahl;
+
+IF IN_idGruppenrecht = 0 THEN
+  SELECT idGruppenrecht INTO rechtid FROM gruppenrecht WHERE recht='User';
+ELSEIF IN_idGruppenrecht = -1 THEN
+  SELECT idGruppenrecht INTO rechtid FROM gruppenrecht WHERE recht='Eingeladen';
+ELSE
+  SET rechtid = idGruppenrecht;
+END IF;
+
+IF anzahl > 0 THEN
+  UPDATE gruppenmitglied SET idGruppenrecht=rechtid WHERE idGruppe=IN_idGruppe AND idBenutzer=IN_idBenutzer;
+ELSE
+  INSERT INTO gruppenmitglied (idGruppe, idBenutzer, idGruppenrecht) VALUES (IN_idGruppe, IN_idBenutzer, rechtid);
+END IF;
+
+SELECT anzahl;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_getUserData` $$
+CREATE PROCEDURE `fakebook`.`sps_getUserData` (
+IN IN_idBenutzer INT
+)
+BEGIN
+
+SELECT vorname, nachname, email FROM benutzer WHERE idBenutzer = IN_idBenutzer;
+
+END $$
+
+DELIMITER ;
+
+
+
+
+
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sps_createMeldung` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_createMeldung`(
+  IN IN_idBenutzer INT,
+  IN IN_meldung VARCHAR(200),
+  IN IN_datum DATETIME
+)
+BEGIN
+
+INSERT INTO meldung (Meldung, idBenutzer, Datum) VALUES(IN_meldung, IN_idBenutzer, IN_datum);
+
+END $$
+
+DELIMITER ;

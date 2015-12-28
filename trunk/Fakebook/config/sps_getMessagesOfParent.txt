@@ -1,0 +1,45 @@
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `fakebook`.`sps_getMessagesOfParent` $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sps_getMessagesOfParent`(
+  IN IN_BenutzerId INT,
+  IN IN_ParentId INT
+)
+BEGIN
+
+DECLARE DEC_id INT;
+
+SELECT
+  IF(idParent IS NOT NULL,idParent,idNachricht) INTO DEC_id
+FROM
+  nachricht
+WHERE
+  (idBenutzerFrom=IN_BenutzerId OR idBenutzerTo=IN_BenutzerId) AND
+  (idNachricht=IN_ParentId OR idParent=IN_ParentId)
+ORDER BY
+  Datum ASC
+LIMIT 1;
+
+SELECT
+  n.idNachricht,
+  n.idBenutzerFrom AS idBenutzer,
+  f.Vorname AS Vorname,
+  f.Nachname AS Nachname,
+  n.Nachricht,
+  IF(n.Betreff IS NULL, n2.Betreff, n.Betreff) AS Betreff,
+  n.Datum
+FROM
+  nachricht n
+LEFT OUTER JOIN
+  Benutzer f ON f.idBenutzer=n.idBenutzerFrom
+LEFT OUTER JOIN
+  Nachricht n2 ON n2.idNachricht=n.idParent
+WHERE
+  (n.idBenutzerFrom=IN_BenutzerId OR n.idBenutzerTO=IN_BenutzerId) AND
+  (n.idNachricht=DEC_id OR n.idParent=DEC_id)
+ORDER BY
+  n.Datum DESC;
+
+END $$
+
+DELIMITER ;
